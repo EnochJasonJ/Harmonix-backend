@@ -79,15 +79,16 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASE_URL = os.getenv("DATABASE_URL")  # We'll set this in Render env vars
+url = urlparse(DATABASE_URL)
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': urlparse(DATABASE_URL).path[1:],  # remove leading /
-        'USER': urlparse(DATABASE_URL).username,
-        'PASSWORD': urlparse(DATABASE_URL).password,
-        'HOST': urlparse(DATABASE_URL).hostname,
-        'PORT': urlparse(DATABASE_URL).port,
+        'NAME': url.path[1:],  # Remove the leading slash
+        'USER': url.username,
+        'PASSWORD': url.password,
+        'HOST': url.hostname,
+        'PORT': url.port,
     }
 }
 
