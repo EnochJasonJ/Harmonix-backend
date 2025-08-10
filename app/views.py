@@ -2,7 +2,8 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.core.mail import send_mail
 from rest_framework import viewsets, permissions
-from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
+from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
 from datetime import date, timedelta
 from .models import *
@@ -156,6 +157,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 token_generator = PasswordResetTokenGenerator()
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def request_password_reset(request):
     email = request.data.get('email')
     if not email:
@@ -182,6 +184,7 @@ def request_password_reset(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def confirm_password_reset(request):
     uidb64 = request.data.get('uid')
     token = request.data.get('token')
