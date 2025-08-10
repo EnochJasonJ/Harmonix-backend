@@ -9,6 +9,12 @@ from .models import *
 from rest_framework.serializers import ModelSerializer
 from .serializers import MemberSerializer, AttendanceSerializer, EventSerializer
 from django.db.models import Q
+from rest_framework.decorators import api_view
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.contrib.auth.models import User
+from django.conf import settings
 # Create your views here.
 
 def hello(request):
@@ -147,4 +153,53 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
 
     
+token_generator = PasswordResetTokenGenerator()
 
+@api_view(['POST'])
+def request_password_reset(request):
+    email = request.data.get('email')
+    if not email:
+        return Response({'error': 'Email is required'}, status=400)
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        # Return 200 even if email doesn't exist (for security)
+        return Response({'message': 'If the email exists, a reset link has been sent.'}, status=200)
+
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = token_generator.make_token(user)
+    reset_link = f"https://yourfrontend.com/reset-password/{uid}/{token}"
+
+    send_mail(
+        subject="Password Reset Request - Harmonix Club",
+        message=f"Hi {user.username},\n\nClick the link below to reset your password:\n{reset_link}\n\nIf you did not request this, please ignore this email.",
+        from_email=settings.EMAIL_HOST_USER,
+        recipient_list=[email],
+    )
+
+    return Response({'message': 'If the email exists, a reset link has been sent.'}, status=200)
+
+
+@api_view(['POST'])
+def confirm_password_reset(request):
+    uidb64 = request.data.get('uid')
+    token = request.data.get('token')
+    new_password = request.data.get('new_password')
+
+    if not uidb64 or not token or not new_password:
+        return Response({'error': 'Missing required fields'}, status=400)
+
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        return Response({'error': 'Invalid reset link'}, status=400)
+
+    if not token_generator.check_token(user, token):
+        return Response({'error': 'Invalid or expired token'}, status=400)
+
+    user.set_password(new_password)
+    user.save()
+
+    return Response({'message': 'Password reset successfully'}, status=200)
