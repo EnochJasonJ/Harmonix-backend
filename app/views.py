@@ -169,7 +169,7 @@ def request_password_reset(request):
 
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = token_generator.make_token(user)
-    reset_link = f"https://yourfrontend.com/reset-password/{uid}/{token}"
+    reset_link = f"https://harmonix-frontend.vercel.app/reset-password/{uid}/{token}"
 
     send_mail(
         subject="Password Reset Request - Harmonix Club",
